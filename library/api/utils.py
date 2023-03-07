@@ -21,7 +21,7 @@ import zipfile
 
 from django import conf
 from django.db import connection
-from fastcore.utils import HTTP404NotFoundError
+from fastcore.net import HTTP404NotFoundError
 from ghapi.all import GhApi
 import yaml
 
