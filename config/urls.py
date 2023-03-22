@@ -21,6 +21,7 @@ urlpatterns = [
     path('about/', index_views.AboutView.as_view(), name='about'),
     path('plugins/', include(('library.plugins.urls', 'plugins'))),
     path('api/v1/', include('library.api.urls', 'api')),
+    path('api/v2/', include('library.api.v2.urls', 'api2')),
     path('admin/', admin.site.urls),
 ]
 
