@@ -26,6 +26,7 @@ def list_packages(request):
     }
     return http.JsonResponse(payload, status=200)
 
+
 def list_distros(request):
     if request.method != 'GET':
         payload = {
@@ -46,7 +47,7 @@ def list_distros(request):
             }
             return http.JsonResponse(payload, status=404)
 
-        query_set = lambda: package.distros.all()
+        query_set = lambda: package.distros.all() # noqa: E731
 
     payload = {
         'distros': [distro.name for distro in query_set()]
