@@ -3,7 +3,7 @@ FROM continuumio/miniconda3
 ARG RUNENV=production
 
 RUN apt-get update -y
-RUN apt-get install procps postgresql-contrib -y
+RUN apt-get install procps postgresql-contrib build-essential libpq-dev -y
 RUN conda update conda -y
 RUN conda install conda-build pip python=3.8 -y
 

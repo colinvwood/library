@@ -39,7 +39,6 @@ class BuildCfg:
     artifact_name: str
     package_name: str
 
-
 @dataclass(frozen=True)
 class PackageBuildCfg(BuildCfg):
     version: str
@@ -47,11 +46,12 @@ class PackageBuildCfg(BuildCfg):
     build_target: str
     package_token: str
     epoch_name: str
+    distro: str
 
     def __post_init__(self):
         # https://docs.python.org/3/library/dataclasses.html#frozen-instances
-        object.__setattr__(self, 'gate', conf.settings.GATE_TESTED)
-        object.__setattr__(self, 'to_channel', str(conf.settings.BASE_CONDA_PATH / self.epoch_name / self.gate))
+        object.__setattr__(self, 'gate', conf.settings.GATE_STAGED)
+        object.__setattr__(self, 'to_channel', str(conf.settings.BASE_CONDA_PATH / self.epoch_name / self.distro / self.gate))
 
 
 @dataclass(frozen=True)
@@ -69,7 +69,7 @@ class DistroBuildCfg(BuildCfg):
         # https://docs.python.org/3/library/dataclasses.html#frozen-instances
         object.__setattr__(self, 'distro_name', self.package_name)
         object.__setattr__(self, 'to_channel',
-                           str(conf.settings.BASE_CONDA_PATH / self.epoch_name / self.gate / self.distro_name))
+                           str(conf.settings.BASE_CONDA_PATH / self.epoch_name / self.distro_name / self.gate ))
         object.__setattr__(self, 'repository', '%s/%s' % (self.owner, self.repo))
 
         if self.pr_number is not None:

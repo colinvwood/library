@@ -10,7 +10,7 @@ from django import forms, conf
 from django.core.exceptions import PermissionDenied
 
 from .tasks import DistroBuildCfg
-from ..packages.models import Package, Epoch
+from ..packages.models import Package, Epoch, Distro
 
 
 class PackageIntegrationForm(forms.Form):
@@ -20,7 +20,16 @@ class PackageIntegrationForm(forms.Form):
     package_name = forms.CharField(required=True)
     repository = forms.CharField(required=True)
     artifact_name = forms.CharField(required=True)
+    distro = forms.CharField(required=True)
     build_target = forms.CharField(required=False)
+
+    def is_in_distro(self):
+        # do not add a package to a distro unless a previous version of the 
+        # package is already in the distro, this ensures packages go where
+        # they are allowed, and that new packages/plugins get added manually 
+        return Distro.objects.filter(
+            name=self.cleaned_data['distro'], 
+            packages__name=self.cleaned_data['package_name']).exists()
 
     def is_known(self):
         try:
@@ -34,6 +43,7 @@ class PackageIntegrationForm(forms.Form):
                 'package_name': self.cleaned_data['package_name'],
                 'repository': self.cleaned_data['repository'],
                 'artifact_name': self.cleaned_data['artifact_name'],
+                'distro': self.cleaned_data['distro'],
                 'github_token': conf.settings.GITHUB_TOKEN,
                 'build_target': build_target,
                 'epoch_names': Epoch.objects.by_build_target(build_target).values_list('name', flat=True),
@@ -41,7 +51,7 @@ class PackageIntegrationForm(forms.Form):
             }
         except Package.DoesNotExist:
             config = None
-
+ 
         return config
 
 

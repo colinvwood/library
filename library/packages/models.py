@@ -59,7 +59,7 @@ class PackageBuild(AuditModel):
     build_target = models.CharField(max_length=50, verbose_name='Build Target')
 
     def verify_gate(self, gate):
-        if gate not in (conf.settings.GATE_TESTED,):
+        if gate not in (conf.settings.GATE_STAGED,):
             raise Exception('invalid gate: %s' % (gate,))
 
         return self.linux_64 and self.osx_64
@@ -81,6 +81,11 @@ class Distro(AuditModel):
     packages = models.ManyToManyField(
         Package,
         through='ThroughDistroPackage',
+        related_name='distros',
+    )
+    package_builds = models.ManyToManyField(
+        PackageBuild,
+        through='ThroughDistroPackageBuild',
         related_name='distros',
     )
 
@@ -197,6 +202,19 @@ class ThroughEpochDistro(AuditModel):
 
     class Meta:
         unique_together = ['epoch', 'distro']
+
+
+class ThroughDistroPackageBuild(AuditModel):
+    id = models.BigAutoField(primary_key=True)
+    distro = models.ForeignKey(Distro, on_delete=models.CASCADE)
+    package_build = models.ForeignKey(PackageBuild, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return 'ThroughDistroPackageBuild<distro=%s, package_build=%s>' % (
+            self.distro, self.package_build)
+
+    class Meta:
+        unique_together = ['distro', 'package_build']
 
 
 class ThroughDistroBuildPackageBuild(AuditModel):

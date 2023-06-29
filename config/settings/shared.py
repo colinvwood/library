@@ -147,7 +147,8 @@ def generate_beat_schedule(TASK_TIMES):
 
 CELERY_BEAT_SCHEDULE = generate_beat_schedule(TASK_TIMES)
 INTEGRATION_REPO = {
-    'owner': 'not-a-real-owner',
+    'owner': 'qiime2',
+    # 'owner': 'not-a-real-owner',
     'repo': 'package-integration',
     'branch': 'main',
     'token': 'foo',

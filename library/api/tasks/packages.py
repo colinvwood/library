@@ -34,10 +34,12 @@ def fetch_package_from_github(ctx: Union['PackageBuildCtx', 'DistroBuildCtx'], c
             utils.unzip(filepath)
 
         pkgs_fp = pathlib.Path(cfg.to_channel)
+        print("pkgs fp: ", pkgs_fp)
         utils.bootstrap_pkgs_dir(pkgs_fp)
 
         filematcher = '**/*%s*.tar.bz2' % (cfg.package_name,)
         for from_path in tmp_pathlib.glob(filematcher):
+            print("in loop, from path: ", from_path, flush=True)
             to_path = pkgs_fp / from_path.parent.name / from_path.name
             shutil.copy(from_path, to_path)
 

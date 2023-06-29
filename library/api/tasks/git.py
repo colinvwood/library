@@ -19,13 +19,14 @@ from .. import utils
              max_retries=12, retry_backoff=conf.settings.TASK_TIMES['03_MIN'],
              retry_backoff_max=conf.settings.TASK_TIMES['02_HR'])
 def update_conda_build_config(ctx: 'PackageBuildCtx', cfg: 'PackageBuildCfg'):  # noqa: F821
+    print("ALL ARCHS PRESENT", not ctx.not_all_architectures_present)
     if ctx.not_all_architectures_present:
         return ctx
 
     # distro doesn't matter here, so skip it by setting to `None`
-    package_versions = {None: {cfg.package_name: cfg.version}}
+    package_versions = {cfg.distro: {cfg.package_name: cfg.version}}
     mgr = utils.IntegrationGitRepoManager(cfg.github_token)
-    mgr.update_conda_build_config('main', cfg.epoch_name, cfg.gate, package_versions)
+    mgr.update_conda_build_config('ci-v2', cfg.epoch_name, cfg.gate, package_versions)
 
     return ctx
 

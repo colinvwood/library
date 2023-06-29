@@ -55,6 +55,34 @@ class PackageBuildInline(admin.TabularInline):
         return 'NA'
 
 
+class PackageBuildInlineDistro(admin.TabularInline):
+    model = Distro.package_builds.through
+    extra = 0
+    can_delete = False
+    verbose_name = 'Package Build'
+    verbose_name_plural = 'Package Builds'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+class DistroInlinePackageBuild(admin.TabularInline):
+    model = Distro.package_builds.through
+    extra = 0
+    can_delete = False
+    verbose_name = 'Distro'
+    verbose_name_plural = 'Distros'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 class PackageBuildInlineDistroBuild(admin.TabularInline):
     model = DistroBuild.package_builds.through
     extra = 0
@@ -101,7 +129,7 @@ class PackageBuildAdmin(admin.ModelAdmin):
     readonly_fields = ('package', 'github_run_id', 'epoch', 'build_target', 'version',
                        'linux_64', 'osx_64', 'created_at', 'updated_at')
     ordering = ('-updated_at',)
-    inlines = [DistroBuildInline]
+    inlines = [DistroInlinePackageBuild, DistroBuildInline]
 
     def has_add_permission(self, request):
         return False
@@ -140,7 +168,8 @@ class DistroAdmin(admin.ModelAdmin):
     fields = ('name', 'created_at', 'updated_at')
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('-updated_at',)
-    inlines = [PackageInline, EpochInline]
+    inlines = [PackageInline, EpochInline, PackageBuildInlineDistro]
+
 
 
 class DistroInline(admin.TabularInline):

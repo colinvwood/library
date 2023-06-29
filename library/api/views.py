@@ -19,14 +19,18 @@ def prepare_packages_for_integration(request):
     if request.method != 'POST':
         payload = {'status': 'error', 'errors': {'http_method': 'invalid http method'}}
         return http.JsonResponse(payload, status=405)
-
     form = forms.PackageIntegrationForm(request.POST, initial={'build_target': 'dev'})
 
     if not form.is_valid():
         payload = {'status': 'error', 'errors': form.errors}
         return http.JsonResponse(payload, status=400)
 
+    if not form.is_in_distro():
+        payload = {'status': 'error', 'errors': 'package not allowed in this distro'}
+        return http.JsonResponse(payload, status=403)
+
     if (config := form.is_known()):
+        print("CONFIG IN /integrate: ", config)
         tasks.handle_new_package_build(config)
 
     payload = {'status': 'ok'}
@@ -51,6 +55,7 @@ def stage_metapackage(request):
         payload = {'status': 'error', 'errors': {'token': 'invalid token'}}
         return http.JsonResponse(payload, status=401)
 
+    print("stage metapackage config:", config, flush=True)
     tasks.handle_new_distro_build(config)
     payload = {'status': 'ok'}
     return http.JsonResponse(payload, status=200)
@@ -74,6 +79,7 @@ def pass_metapackage(request):
         payload = {'status': 'error', 'errors': {'token': 'invalid token'}}
         return http.JsonResponse(payload, status=401)
 
+    print("config: ", config)
     tasks.handle_passed_distro_build(config)
     payload = {'status': 'ok'}
     return http.JsonResponse(payload, status=200)

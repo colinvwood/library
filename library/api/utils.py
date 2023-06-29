@@ -169,21 +169,18 @@ class IntegrationGitRepoManager:
             raise Exception('Missing Github Token')
 
         self.github_token = github_token
-
         self.owner = conf.settings.INTEGRATION_REPO['owner']
         self.repo = conf.settings.INTEGRATION_REPO['repo']
-        self.main_branch = conf.settings.INTEGRATION_REPO['branch']
+        # self.main_branch = conf.settings.INTEGRATION_REPO['branch']
+        self.main_branch = 'ci-v2'
         self.ghapi = None
 
     def construct_interface(self):
         if self.ghapi is None:
             self.ghapi = GhApi(token=self.github_token)
 
-    def path_builder(self, epoch, gate, fn, distro=None):
-        if distro is None:
-            parts = [epoch, gate, fn]
-        else:
-            parts = [epoch, gate, distro, fn]
+    def path_builder(self, epoch, gate, fn, distro):
+        parts = [epoch, distro, gate, fn]
         return os.path.join(*parts)
 
     def update_conda_build_config(self, branch, epoch, gate, package_versions):
@@ -203,33 +200,42 @@ class IntegrationGitRepoManager:
             if lock:
                 # Wait until we get a lock before setting up ghapi
                 self.construct_interface()
-                for distro, package_versions in package_versions.items():
+                for distro, package_names in package_versions.items():
                     path = self.path_builder(epoch=epoch,
                                              gate=gate,
-                                             fn='conda_build_config.yaml',
+                                             fn='seed-environment-conda.yml',
                                              distro=distro)
                     msg = 'updating %s\n\n' % (path,)
-                    cbc, sha = self.fetch_yaml_from_github(path)
-                    for package_name, ver in package_versions.items():
-                        # cbc.yml _needs_ snake case names
-                        package_name = package_name.replace('-', '_')
+                    seed_env, sha = self.fetch_yaml_from_github(path)
 
-                        if package_name in cbc:
-                            last_versions = cbc[package_name]
-                            if len(last_versions) != 1:
-                                raise Exception('Incorrect number of versions')
-                            if compare_package_versions(ver, last_versions[0]):
+                    print("SEED ENV YAML", seed_env)
+                    name_to_ver_dict = {
+                        line.split('=')[0]: line.split('=')[1] 
+                            for line in seed_env['dependencies']}
+
+                    for package_name, ver in package_names.items():
+                        if package_name in name_to_ver_dict:
+                            # last_versions = cbc[package_name]
+                            last_version = name_to_ver_dict[package_name]
+                            if compare_package_versions(ver, last_version):
                                 raise Exception('Package version confusion')
+
                         # cbc.yml _needs_ stringified version identifiers,
                         # also, cbc.yml expects an array for each package
-                        cbc[package_name] = [str(ver)]
+                        name_to_ver_dict[package_name] = ver
+
                         msg += '- %s ==%s\n' % (package_name, ver)
+                    
+                    seed_env['dependencies'] = \
+                        [name + '=' + ver for name, ver in name_to_ver_dict.items()]
                     self.add_branch_if_missing(branch)
-                    self.commit_to_github(cbc, sha, path, msg, branch)
+                    print("seed env yaml post mutate", seed_env)
+                    self.commit_to_github(seed_env, sha, path, msg, branch)
             else:
                 raise AdvisoryLockNotReadyException
 
     def fetch_yaml_from_github(self, path):
+        print("FETCH YAML CALL", self.owner, self.repo, path, self.main_branch)
         try:
             payload = self.ghapi.repos.get_content(
                 owner=self.owner,
@@ -253,7 +259,7 @@ class IntegrationGitRepoManager:
             self.ghapi.repos.get_branch(
                 owner=self.owner,
                 repo=self.repo,
-                branch=branch,
+                branch=branch
             )
         except HTTP404NotFoundError:
             payload = self.ghapi.git.get_ref(
